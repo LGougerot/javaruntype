@@ -19,11 +19,8 @@
  */
 package org.javaruntype.cache;
 
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.javaruntype.util.Utils;
+import java.util.function.Supplier;
 
 /**
  * <p>
@@ -46,36 +43,18 @@ import org.javaruntype.util.Utils;
  */
 public final class ConcurrentCache<K,V> {
 
-    private final static int DEFAULT_MAX_ELEMENTS = 100;
-    
     private final ConcurrentHashMap<K,V> cache; 
-    private final int maxElements;
-    private final Queue<K> keysQueue;
     
     
-    /**
-     * <p>
-     * Create a new synchronized cache.
-     * </p>
-     * 
-     */
-    public ConcurrentCache() {
-        this(DEFAULT_MAX_ELEMENTS);
-    }
     
     /**
      * <p>
      * Create a new synchronized cache specifying a maximum size for the cache
      * </p>
-     *
-     * @param maxElements the maximum number of elements this cache can contain
      */
-    public ConcurrentCache(final int maxElements) {
+    public ConcurrentCache() {
         super();
-        Utils.validateIsTrue(maxElements > 1, "Max elements must be > 1");
         this.cache = new ConcurrentHashMap<K,V>();
-        this.maxElements = maxElements;
-        this.keysQueue = new ConcurrentLinkedQueue<K>();
     }
 
     
@@ -113,21 +92,13 @@ public final class ConcurrentCache<K,V> {
      * @param value the value which will be added to the map
      * @return the value added to the map (or the one already existing at the map)
      */
-    public V computeAndGet(final K key, final V value) {
-        V result = this.cache.get(key);
-        if (result == null) {
-            result = this.cache.putIfAbsent(key, value);
-            if (result == null) {
-                result = value;
-                final int excessElements = this.cache.size() - this.maxElements;
-                for (int i = 0; i < excessElements; i++) {
-                    final K keyToRemove = this.keysQueue.poll();
-                    this.cache.remove(keyToRemove);
-                }
-                this.keysQueue.add(key);
-            }
+    public V computeAndGet(final K key, final Supplier<V> value) {
+        var res = this.cache.get(key);
+        if (res == null) {
+            var v = value.get();
+            return this.cache.computeIfAbsent(key, k -> v);
         }
-        return result;
+        return res;
     }
     
 }

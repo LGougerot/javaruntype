@@ -59,13 +59,9 @@ final class TypeDefRegistry {
     
     TypeDef forClass(final Class<?> typeClass) {
 
-        final TypeDef typeDef = this.typeDefsByClass.get(typeClass);
-        if (typeDef != null) {
-            return typeDef; 
-        }
         return this.typeDefsByClass.computeAndGet(
                 typeClass, 
-                TypeDefUtil.forClass(typeClass));
+                () -> TypeDefUtil.forClass(typeClass));
         
     }
     

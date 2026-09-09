@@ -46,17 +46,17 @@ final class TypeRegistry {
 
     
     private final ConcurrentCache<String,Type<?>> types = 
-        new ConcurrentCache<String,Type<?>>(200);
+        new ConcurrentCache<String,Type<?>>();
     private final ConcurrentCache<String,Type<?>> typesByPossibleNames = 
-        new ConcurrentCache<String, Type<?>>(100);
+        new ConcurrentCache<String, Type<?>>();
     private final ConcurrentCache<Class<?>,Type<?>> rawTypesByClass = 
-        new ConcurrentCache<Class<?>,Type<?>>(100);
+        new ConcurrentCache<Class<?>,Type<?>>();
     private final ConcurrentCache<Type<?>,Set<Type<?>>> extendedTypesByType = 
-        new ConcurrentCache<Type<?>, Set<Type<?>>>(300);
+        new ConcurrentCache<Type<?>, Set<Type<?>>>();
     protected final ConcurrentCache<TypeAssignation, Boolean> typeAssignabilities = 
-        new ConcurrentCache<TypeAssignation, Boolean>(200);
+        new ConcurrentCache<TypeAssignation, Boolean>();
     protected final ConcurrentCache<java.lang.reflect.Type, Type<?>> typesbyJavaLangReflectType = 
-        new ConcurrentCache<java.lang.reflect.Type, Type<?>>(100);
+        new ConcurrentCache<java.lang.reflect.Type, Type<?>>();
     
     
     private static final TypeRegistry instance = new TypeRegistry(); 
@@ -77,13 +77,9 @@ final class TypeRegistry {
 
     Type<?> forName(final String typeName) {
 
-        final Type<?> type = this.typesByPossibleNames.get(typeName);
-        if (type != null) {
-            return type; 
-        }
         return this.typesByPossibleNames.computeAndGet(
                 typeName, 
-                TypeUtil.forName(typeName));
+                () -> TypeUtil.forName(typeName));
         
     }
     
@@ -92,13 +88,9 @@ final class TypeRegistry {
     
     Type<?> getRawTypeForClass(final Class<?> typeClass) {
         
-        final Type<?> type = this.rawTypesByClass.get(typeClass);
-        if (type != null) {
-            return type; 
-        }
         return this.rawTypesByClass.computeAndGet(
                 typeClass, 
-                TypeUtil.getRawTypeForClass(typeClass));
+                () -> TypeUtil.getRawTypeForClass(typeClass));
         
     }
     
@@ -110,13 +102,9 @@ final class TypeRegistry {
 
         final String identifier = 
             TypeUtil.createName(componentClass, typeParameters, arrayDimensions);
-        final Type<?> type = this.types.get(identifier);
-        if (type != null) {
-            return type; 
-        }
         return this.types.computeAndGet(
                 identifier, 
-                Type.createType(componentClass, typeParameters, arrayDimensions));
+                () -> Type.createType(componentClass, typeParameters, arrayDimensions));
         
     }
 
@@ -141,13 +129,9 @@ final class TypeRegistry {
     
     Set<Type<?>> getExtendedTypes(final Type<?> type) {
         
-        final Set<Type<?>> extendedTypes = this.extendedTypesByType.get(type);
-        if (extendedTypes != null) {
-            return extendedTypes; 
-        }
         return this.extendedTypesByType.computeAndGet(
                 type, 
-                TypeUtil.getExtendedTypes(type));
+                () -> TypeUtil.getExtendedTypes(type));
         
     }
 
@@ -155,14 +139,9 @@ final class TypeRegistry {
     
     @SuppressWarnings("unchecked")
     Type<?> forJavaLangReflectType(final java.lang.reflect.Type javaLangReflectType) {
-
-        final Type<?> type = this.typesbyJavaLangReflectType.get(javaLangReflectType);
-        if (type != null) {
-            return type; 
-        }
         return this.typesbyJavaLangReflectType.computeAndGet(
                 javaLangReflectType, 
-                TypeUtil.createFromJavaLangReflectType(
+                () -> TypeUtil.createFromJavaLangReflectType(
                         javaLangReflectType, javaLangReflectType, Collections.EMPTY_MAP));
         
     }
@@ -185,13 +164,10 @@ final class TypeRegistry {
     boolean isAssignableFrom(final Type<?> type, final Type<?> fromType) {
 
         final TypeAssignation assignation = new TypeAssignation(type, fromType);
-        final Boolean assignable = this.typeAssignabilities.get(assignation);
-        if (assignable != null) {
-            return assignable.booleanValue(); 
-        }
         return this.typeAssignabilities.computeAndGet(
-                assignation, 
-                Boolean.valueOf(TypeUtil.isAssignableFrom(type, fromType))).booleanValue();
+                    assignation,  
+                    () -> Boolean.valueOf(TypeUtil.isAssignableFrom(type, fromType)))
+                .booleanValue();
         
     }
     
